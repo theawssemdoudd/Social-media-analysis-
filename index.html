@@ -48,13 +48,14 @@
 
     // تسجيل الدخول
     loginBtn.addEventListener("click", async () => {
-      try {
-        await signInWithEmailAndPassword(auth, emailInput.value, passwordInput.value);
-        alert("✅ تم تسجيل الدخول");
-      } catch (error) {
-        alert("❌ خطأ: " + error.message);
-      }
-    });
+  try {
+    await signInWithEmailAndPassword(auth, emailInput.value, passwordInput.value);
+    // ✅ تم تسجيل الدخول → ننتقل مباشرة
+    window.location.href = "projects.html";
+  } catch (error) {
+    alert("❌ " + error.message);
+  }
+});
 
     // تسجيل الخروج
     logoutBtn.addEventListener("click", async () => {
