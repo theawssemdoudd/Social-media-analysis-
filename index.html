@@ -2,60 +2,21 @@
 <html lang="ar">
 <head>
   <meta charset="UTF-8">
-  <title>إدارة المشاريع</title>
-  <style>
-    body {
-      font-family: Tahoma, sans-serif;
-      background: #f7f7f7;
-      direction: rtl;
-      padding: 20px;
-    }
-    h1 { text-align: center; }
-    .form {
-      margin-bottom: 20px;
-      background: white;
-      padding: 15px;
-      border-radius: 10px;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-    }
-    input, button {
-      padding: 8px;
-      margin: 5px;
-      border-radius: 5px;
-      border: 1px solid #ccc;
-    }
-    button {
-      background: #2196f3;
-      color: white;
-      border: none;
-      cursor: pointer;
-    }
-    .project {
-      background: white;
-      padding: 10px;
-      margin: 10px 0;
-      border-radius: 8px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-    }
-  </style>
+  <title>تسجيل الدخول</title>
 </head>
 <body>
-  <h1>📌 قائمة المشاريع</h1>
-
-  <div class="form">
-    <input type="text" id="projectName" placeholder="اسم المشروع">
-    <input type="date" id="deadline">
-    <button id="addBtn">➕ إضافة</button>
-  </div>
-
-  <div id="projectsList"></div>
+  <h2>🔐 تسجيل الدخول</h2>
+  <input type="email" id="email" placeholder="البريد الإلكتروني">
+  <input type="password" id="password" placeholder="كلمة المرور">
+  <button id="signup">إنشاء حساب</button>
+  <button id="login">تسجيل الدخول</button>
+  <button id="logout" style="display:none;">تسجيل الخروج</button>
 
   <script type="module">
-    // Firebase SDKs
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
-    import { getFirestore, collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+    import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 
-    // إعدادات مشروعك
+    // إعدادات Firebase
     const firebaseConfig = {
       apiKey: "AIzaSyBR3RiVIGpBwmFbwycC9amdh9x6KqCir_M",
       authDomain: "hasmen-8eba0.firebaseapp.com",
@@ -66,60 +27,51 @@
       measurementId: "G-70RKFK8HGX"
     };
 
-    // تهيئة Firebase
     const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
+    const auth = getAuth(app);
 
-    const projectName = document.getElementById("projectName");
-    const deadline = document.getElementById("deadline");
-    const addBtn = document.getElementById("addBtn");
-    const projectsList = document.getElementById("projectsList");
+    const emailInput = document.getElementById("email");
+    const passwordInput = document.getElementById("password");
+    const signupBtn = document.getElementById("signup");
+    const loginBtn = document.getElementById("login");
+    const logoutBtn = document.getElementById("logout");
 
-    // إضافة مشروع جديد
-    async function addProject(name, deadlineDate) {
+    // إنشاء حساب جديد
+    signupBtn.addEventListener("click", async () => {
       try {
-        await addDoc(collection(db, "projects"), {
-          name: name,
-          deadline: deadlineDate,
-          status: "new",
-          createdAt: new Date()
-        });
-        loadProjects(); // إعادة تحميل المشاريع بعد الإضافة
-      } catch (e) {
-        console.error("❌ خطأ في إضافة المشروع: ", e);
-      }
-    }
-
-    // جلب المشاريع من Firestore
-    async function loadProjects() {
-      projectsList.innerHTML = ""; // مسح القائمة القديمة
-      const querySnapshot = await getDocs(collection(db, "projects"));
-      querySnapshot.forEach((doc) => {
-        const project = doc.data();
-        const div = document.createElement("div");
-        div.className = "project";
-        div.innerHTML = `
-          <strong>📂 ${project.name}</strong><br>
-          ⏳ الموعد النهائي: ${project.deadline}<br>
-          ✅ الحالة: ${project.status}
-        `;
-        projectsList.appendChild(div);
-      });
-    }
-
-    // عند الضغط على زر إضافة
-    addBtn.addEventListener("click", () => {
-      if (projectName.value.trim() && deadline.value) {
-        addProject(projectName.value, deadline.value);
-        projectName.value = "";
-        deadline.value = "";
-      } else {
-        alert("⚠️ يرجى إدخال جميع البيانات");
+        await createUserWithEmailAndPassword(auth, emailInput.value, passwordInput.value);
+        alert("✅ تم إنشاء الحساب");
+      } catch (error) {
+        alert("❌ خطأ: " + error.message);
       }
     });
 
-    // تحميل المشاريع عند فتح الصفحة
-    loadProjects();
+    // تسجيل الدخول
+    loginBtn.addEventListener("click", async () => {
+      try {
+        await signInWithEmailAndPassword(auth, emailInput.value, passwordInput.value);
+        alert("✅ تم تسجيل الدخول");
+      } catch (error) {
+        alert("❌ خطأ: " + error.message);
+      }
+    });
+
+    // تسجيل الخروج
+    logoutBtn.addEventListener("click", async () => {
+      await signOut(auth);
+      alert("تم تسجيل الخروج");
+    });
+
+    // متابعة حالة المستخدم
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        console.log("مستخدم مسجل:", user.email);
+        logoutBtn.style.display = "block";
+      } else {
+        console.log("لا يوجد مستخدم");
+        logoutBtn.style.display = "none";
+      }
+    });
   </script>
 </body>
 </html>
