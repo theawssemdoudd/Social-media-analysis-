@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>منشئ المحتوى – Generate</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+
+  <h1>منشئ المحتوى (بسيط)</h1>
+
+  <!-- حالة المستخدم -->
+  <div id="authState">التحقق من حالة تسجيل الدخول...</div>
+  <button id="logoutBtn" style="display:none;">تسجيل الخروج</button>
+
+  <hr>
+
+  <!-- النموذج -->
+  <form id="genForm">
+    <label>المنصة:
+      <select id="platform">
+        <option value="Instagram">Instagram</option>
+        <option value="TikTok">TikTok</option>
+        <option value="Twitter/X">Twitter/X</option>
+        <option value="Facebook">Facebook</option>
+        <option value="LinkedIn">LinkedIn</option>
+        <option value="YouTube">YouTube</option>
+      </select>
+    </label>
+    <br>
+
+    <label>اللغة:
+      <select id="lang">
+        <option value="ar">العربية</option>
+        <option value="en">English</option>
+        <option value="fr">Français</option>
+      </select>
+    </label>
+    <br>
+
+    <label>النبرة (Tone):
+      <select id="tone">
+        <option value="عفوية">عفوية</option>
+        <option value="احترافية">احترافية</option>
+        <option value="مرحة">مرحة</option>
+        <option value="ملهمة">ملهمة</option>
+        <option value="تعليمية">تعليمية</option>
+      </select>
+    </label>
+    <br>
+
+    <label>الهدف من المنشور:
+      <select id="goal">
+        <option value="زيادة التفاعل">زيادة التفاعل</option>
+        <option value="زيارات للموقع">زيارات للموقع</option>
+        <option value="التوعية بالعلامة">التوعية بالعلامة</option>
+        <option value="تحويلات/مبيعات">تحويلات/مبيعات</option>
+        <option value="إطلاق منتج">إطلاق منتج</option>
+      </select>
+    </label>
+    <br>
+
+    <label>نوع المنشور:
+      <select id="postType">
+        <option value="نصي">نصي</option>
+        <option value="صورة">صورة</option>
+        <option value="فيديو قصير">فيديو قصير</option>
+        <option value="قصة/ستوري">قصة/ستوري</option>
+        <option value="كاروسيل">كاروسيل</option>
+      </select>
+    </label>
+    <br>
+
+    <label>وصف مختصر للفكرة:
+      <br>
+      <textarea id="brief" rows="5" cols="50" placeholder="اشرح الفكرة أو الحملة باختصار"></textarea>
+    </label>
+    <br>
+
+    <label>كلمات مفتاحية (مفصولة بفواصل):
+      <br>
+      <input id="keywords" type="text" placeholder="مثال: خصم, إطلاق, منتج جديد">
+    </label>
+    <br>
+
+    <label>دعوة لاتخاذ إجراء (CTA) (اختياري):
+      <br>
+      <input id="cta" type="text" placeholder="مثال: اشترك الآن، جرّب مجانًا">
+    </label>
+    <br>
+
+    <label>روابط/صور (اختياري):
+      <br>
+      <input id="assets" type="text" placeholder="رابط صورة أو فيديو">
+    </label>
+    <br>
+
+    <label>تاريخ/وقت النشر (اختياري):
+      <br>
+      <input id="schedule" type="datetime-local">
+    </label>
+    <br><br>
+
+    <button type="button" id="previewBtn">توليد معاينة</button>
+    <button type="button" id="saveBtn">حفظ في القاعدة</button>
+    <button type="reset">مسح الحقول</button>
+  </form>
+
+  <h2>المعاينة</h2>
+  <pre id="previewBox" style="white-space:pre-wrap;"></pre>
+  <button id="copyBtn" type="button">نسخ المعاينة</button>
+
+  <hr>
+
+  <h2>السجل الخاص بي</h2>
+  <div id="history"></div>
+  <button id="reloadHistoryBtn" type="button">تحديث السجل</button>
+
+  <!-- Firebase SDKs -->
+  <script type="module">
+    // Firebase imports
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
+    import { 
+      getAuth, onAuthStateChanged, signOut 
+    } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
+    import {
+      getFirestore, collection, addDoc, query, where, getDocs, orderBy, serverTimestamp
+    } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+
+    // إعدادات مشروعك (التي زودتني بها)
+    const firebaseConfig = {
+      apiKey: "AIzaSyBR3RiVIGpBwmFbwycC9amdh9x6KqCir_M",
+      authDomain: "hasmen-8eba0.firebaseapp.com",
+      projectId: "hasmen-8eba0",
+      storageBucket: "hasmen-8eba0.firebasestorage.app",
+      messagingSenderId: "992187142687",
+      appId: "1:992187142687:web:c24dd992ed61ee80d43b2a",
+      measurementId: "G-70RKFK8HGX"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    // عناصر الواجهة
+    const authState = document.getElementById('authState');
+    const logoutBtn = document.getElementById('logoutBtn');
+
+    const platform = document.getElementById('platform');
+    const lang = document.getElementById('lang');
+    const tone = document.getElementById('tone');
+    const goal = document.getElementById('goal');
+    const postType = document.getElementById('postType');
+    const brief = document.getElementById('brief');
+    const keywords = document.getElementById('keywords');
+    const cta = document.getElementById('cta');
+    const assets = document.getElementById('assets');
+    const schedule = document.getElementById('schedule');
+
+    const previewBtn = document.getElementById('previewBtn');
+    const saveBtn = document.getElementById('saveBtn');
+    const copyBtn = document.getElementById('copyBtn');
+    const previewBox = document.getElementById('previewBox');
+
+    const historyBox = document.getElementById('history');
+    const reloadHistoryBtn = document.getElementById('reloadHistoryBtn');
+
+    let currentUser = null;
+
+    // متابعة حالة المستخدم
+    onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        currentUser = user;
+        authState.textContent = "مسجّل الدخول: " + (user.email || user.uid);
+        logoutBtn.style.display = "inline-block";
+        await loadHistory();
+      } else {
+        currentUser = null;
+        authState.textContent = "غير مسجّل. سيتم تحويلك لصفحة تسجيل الدخول.";
+        logoutBtn.style.display = "none";
+        // يمكنك تغيير المسار حسب ملف تسجيل الدخول لديك
+        setTimeout(() => { window.location.href = "login.html"; }, 1000);
+      }
+    });
+
+    // تسجيل الخروج
+    logoutBtn.addEventListener('click', async () => {
+      await signOut(auth);
+    });
+
+    // دالة توليد المعاينة (قالب بسيط)
+    function buildPreview() {
+      const kw = (keywords.value || "").split(",").map(s => s.trim()).filter(Boolean);
+      const kwText = kw.length ? ("# " + kw.join("  #")) : "";
+
+      const lines = [];
+      lines.push("المنصة: " + platform.value);
+      lines.push("اللغة: " + lang.value);
+      lines.push("النبرة: " + tone.value);
+      lines.push("الهدف: " + goal.value);
+      lines.push("النوع: " + postType.value);
+      if (schedule.value) lines.push("موعد النشر: " + schedule.value);
+      if (assets.value) lines.push("روابط/صور: " + assets.value);
+      lines.push("");
+      lines.push("النص المقترح:");
+      lines.push((brief.value || "").trim() ? brief.value.trim() : "— لا يوجد وصف —");
+      if (cta.value) {
+        lines.push("");
+        lines.push("الدعوة لاتخاذ إجراء (CTA): " + cta.value);
+      }
+      if (kwText) {
+        lines.push("");
+        lines.push("وسوم مقترحة:");
+        lines.push(kwText);
+      }
+      return lines.join("\n");
+    }
+
+    // عرض المعاينة
+    previewBtn.addEventListener('click', () => {
+      previewBox.textContent = buildPreview();
+    });
+
+    // نسخ المعاينة
+    copyBtn.addEventListener('click', async () => {
+      const txt = previewBox.textContent || buildPreview();
+      try {
+        await navigator.clipboard.writeText(txt);
+        alert("تم النسخ ✅");
+      } catch (e) {
+        alert("تعذر النسخ تلقائيًا. انسخ يدويًا.");
+      }
+    });
+
+    // حفظ في Firestore
+    saveBtn.addEventListener('click', async () => {
+      if (!currentUser) {
+        alert("يرجى تسجيل الدخول أولًا.");
+        return;
+      }
+      const payload = {
+        userId: currentUser.uid,
+        platform: platform.value,
+        lang: lang.value,
+        tone: tone.value,
+        goal: goal.value,
+        postType: postType.value,
+        brief: brief.value.trim(),
+        keywords: keywords.value.trim(),
+        cta: cta.value.trim(),
+        assets: assets.value.trim(),
+        schedule: schedule.value || null,
+        preview: buildPreview(),
+        createdAt: serverTimestamp()
+      };
+      try {
+        await addDoc(collection(db, "generations"), payload);
+        alert("تم الحفظ ✅");
+        await loadHistory();
+      } catch (e) {
+        console.error(e);
+        alert("حدث خطأ أثناء الحفظ. تحقق من Firestore Rules.");
+      }
+    });
+
+    // تحميل السجل الخاص بالمستخدم
+    async function loadHistory() {
+      if (!currentUser) return;
+      historyBox.innerHTML = "جاري التحميل...";
+      try {
+        // ملاحظة: orderBy(createdAt) يحتاج وجود فهرس في بعض الأحيان.
+        const q = query(
+          collection(db, "generations"),
+          where("userId", "==", currentUser.uid),
+          orderBy("createdAt", "desc")
+        );
+        const snap = await getDocs(q);
+        if (snap.empty) {
+          historyBox.textContent = "لا توجد عناصر محفوظة بعد.";
+          return;
+        }
+        const frag = document.createDocumentFragment();
+        snap.forEach(doc => {
+          const d = doc.data();
+          const wrap = document.createElement("div");
+          wrap.style.border = "1px solid #ddd";
+          wrap.style.padding = "8px";
+          wrap.style.marginBottom = "8px";
+          const title = (d.platform || "") + " • " + (d.postType || "") + (d.schedule ? " • " + d.schedule : "");
+          const heading = document.createElement("div");
+          heading.textContent = title;
+          heading.style.fontWeight = "bold";
+
+          const pre = document.createElement("pre");
+          pre.style.whiteSpace = "pre-wrap";
+          pre.textContent = d.preview || "";
+
+          wrap.appendChild(heading);
+          wrap.appendChild(pre);
+          frag.appendChild(wrap);
+        });
+        historyBox.innerHTML = "";
+        historyBox.appendChild(frag);
+      } catch (e) {
+        console.error(e);
+        historyBox.textContent = "تعذر تحميل السجل.";
+      }
+    }
+
+    reloadHistoryBtn.addEventListener('click', loadHistory);
+  </script>
+</body>
+  </html>
