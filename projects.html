@@ -34,6 +34,36 @@
     <button id="logout" style="display:none;">تسجيل الخروج</button>
   </div>
 
+<nav class="navbar">
+  <a href="projects.html">📌 مشاريعي</a>
+  <a href="tasks.html">📝 مهامي</a>
+  <a href="notes.html">📒 ملاحظاتي</a>
+  <a href="settings.html">⚙️ الإعدادات</a>
+</nav>
+
+<style>
+  .navbar {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    background: #2196f3;
+    padding: 12px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+  }
+  .navbar a {
+    color: white;
+    text-decoration: none;
+    font-weight: bold;
+    padding: 6px 12px;
+    border-radius: 6px;
+    transition: background 0.3s;
+  }
+  .navbar a:hover {
+    background: rgba(255, 255, 255, 0.2);
+  }
+</style>
+
   <!-- إضافة مشروع -->
   <div class="form" id="projectForm" style="display:none;">
     <input type="text" id="projectName" placeholder="اسم المشروع">
