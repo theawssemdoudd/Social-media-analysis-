@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+   <!DOCTYPE html>
 <html lang="ar">
 <head>
   <meta charset="UTF-8">
@@ -6,11 +6,18 @@
   <style>
     body { font-family: Tahoma, sans-serif; direction: rtl; background: #f7f7f7; padding: 20px; }
     h1 { text-align: center; }
-    .form, .auth {
+    .header {
+      display: flex; justify-content: space-between; align-items: center;
+      background: white; padding: 10px 15px; border-radius: 10px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-bottom: 20px;
+    }
+    .form {
       margin-bottom: 20px; background: white; padding: 15px;
       border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);
     }
-    input, button { padding: 8px; margin: 5px; border-radius: 5px; border: 1px solid #ccc; }
+    input, button {
+      padding: 8px; margin: 5px; border-radius: 5px; border: 1px solid #ccc;
+    }
     button { background: #2196f3; color: white; border: none; cursor: pointer; }
     .project {
       background: white; padding: 10px; margin: 10px 0;
@@ -21,12 +28,9 @@
 <body>
   <h1>📌 مشاريعي</h1>
 
-  <!-- تسجيل الدخول / الخروج -->
-  <div class="auth">
-    <input type="email" id="email" placeholder="البريد الإلكتروني">
-    <input type="password" id="password" placeholder="كلمة المرور">
-    <button id="signup">إنشاء حساب</button>
-    <button id="login">تسجيل الدخول</button>
+  <!-- رأس الصفحة: معلومات المستخدم -->
+  <div class="header">
+    <span id="userInfo">👤 جاري التحميل...</span>
     <button id="logout" style="display:none;">تسجيل الخروج</button>
   </div>
 
@@ -43,7 +47,7 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
     import { getFirestore, collection, addDoc, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
-    import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
+    import { getAuth, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 
     // إعدادات Firebase
     const firebaseConfig = {
@@ -61,11 +65,8 @@
     const auth = getAuth(app);
 
     // عناصر الصفحة
-    const emailInput = document.getElementById("email");
-    const passwordInput = document.getElementById("password");
-    const signupBtn = document.getElementById("signup");
-    const loginBtn = document.getElementById("login");
     const logoutBtn = document.getElementById("logout");
+    const userInfo = document.getElementById("userInfo");
     const projectForm = document.getElementById("projectForm");
     const projectName = document.getElementById("projectName");
     const deadline = document.getElementById("deadline");
@@ -73,26 +74,6 @@
     const projectsList = document.getElementById("projectsList");
 
     let currentUser = null;
-
-    // 🔹 إنشاء حساب
-    signupBtn.addEventListener("click", async () => {
-      try {
-        await createUserWithEmailAndPassword(auth, emailInput.value, passwordInput.value);
-        alert("✅ تم إنشاء الحساب");
-      } catch (error) {
-        alert("❌ " + error.message);
-      }
-    });
-
-    // 🔹 تسجيل الدخول
-    loginBtn.addEventListener("click", async () => {
-      try {
-        await signInWithEmailAndPassword(auth, emailInput.value, passwordInput.value);
-        alert("✅ تم تسجيل الدخول");
-      } catch (error) {
-        alert("❌ " + error.message);
-      }
-    });
 
     // 🔹 تسجيل الخروج
     logoutBtn.addEventListener("click", async () => {
@@ -103,18 +84,17 @@
     onAuthStateChanged(auth, (user) => {
       if (user) {
         currentUser = user;
+        userInfo.textContent = "👤 " + user.email;
         logoutBtn.style.display = "block";
         projectForm.style.display = "block";
         loadProjects();
       } else {
-        currentUser = null;
-        logoutBtn.style.display = "none";
-        projectForm.style.display = "none";
-        projectsList.innerHTML = "";
+        // لو ما في مستخدم يرجع لصفحة تسجيل الدخول
+        window.location.href = "login.html";
       }
     });
 
-    // 🔹 إضافة مشروع جديد مرتبط بالمستخدم
+    // 🔹 إضافة مشروع جديد
     async function addProject(name, deadlineDate) {
       if (!currentUser) return;
       await addDoc(collection(db, "projects"), {
@@ -127,7 +107,7 @@
       loadProjects();
     }
 
-    // 🔹 تحميل مشاريع المستخدم الحالي فقط
+    // 🔹 تحميل مشاريع المستخدم الحالي
     async function loadProjects() {
       projectsList.innerHTML = "";
       if (!currentUser) return;
